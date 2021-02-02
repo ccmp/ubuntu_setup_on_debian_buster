@@ -1,24 +1,38 @@
 #!/bin/bash 
 
-TOP_DIR=${PWD}/Build
+dev=/dev/nvme0n1
+TOP_DIR=${PWD}
 
-mkdir -p ${TOP_DIR}/server
-mkdir -p ${TOP_DIR}/desktop
+sgdisk -Z $dev
+sgdisk -n 2::+512M  $dev
+sgdisk -t 2:ef00 $dev
+sgdisk -n 1:: $dev
+sgdisk -c 1:Linux -c 2:ESP $dev
+sgdisk -p $dev
+partprobe
 
-SROOT=${TOP_DIR}/server
-DROOT=${TOP_DIR}/desktop
+mkfs.fat -F32 -n efi ${dev}p2
+mkfs.ext4 -F -L ubuntu ${dev}p1
+
+fatlabel ${dev}p2 ESP
+
+mkdir -p ${TOP_DIR}/root
+mount -L ubuntu ${TOP_DIR}/root
+mkdir -p ${TOP_DIR}/root/boot/efi
+mount -L ESP ${TOP_DIR}/root/boot/efi
 
 ### === debootstrap ===
 
 time debootstrap \
---include=ubuntu-server,linux-image-generic,\
+--include=ubuntu-desktop,linux-image-generic,\
 network-manager,\
 openssh-server,openssh-client,grub-efi \
-focal ${SROOT} http://archive.ubuntu.com/ubuntu/
+focal ./root/ http://archive.ubuntu.com/ubuntu/
+
 
 ### === post debootstrap ===
 
-cat << \EOF > ${SROOT}/etc/apt/sources.list
+cat << \EOF > ${TOP_DIR}/root/etc/apt/sources.list
 #deb http://archive.ubuntu.com/ubuntu focal main
 deb http://archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
 deb-src http://archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
@@ -31,7 +45,7 @@ deb-src http://archive.canonical.com/ubuntu focal partner
 EOF
 
 
-cat << EOF > ${SROOT}/boot/grub/grub.cfg_always
+cat << EOF > ${TOP_DIR}/root/boot/grub/grub.cfg_always
 
 set default=0
 set timeout=5
@@ -46,7 +60,7 @@ linux /boot/vmlinuz.old root=/dev/${dev}p1 vga=0x305 panic=10 net.ifnames=0 bios
 EOF
 
 
-cat << EOF > ${SROOT}/etc/netplan/01-netconfig.yaml 
+cat << EOF > ${TOP_DIR}/root/etc/netplan/01-netconfig.yaml 
 
 network:
   ethernets:
@@ -62,13 +76,13 @@ network:
   version: 2
 EOF
 
-cat << EOF > ${SROOT}/etc/fstab 
+cat << EOF > ${TOP_DIR}/root/etc/fstab 
 ${dev}p1  /               ext4    errors=remount-ro 0       1
 LABEL=ESP	/boot/efi	vfat	defaults	0	0
 EOF
 
 
-cat << \EOF > ${SROOT}/etc/default/grub
+cat << \EOF > ${TOP_DIR}/root/etc/default/grub
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=10
 GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
@@ -79,7 +93,7 @@ GRUB_GFXMODE=640x480
 EOF
 
 
-cat << \EOF > ${SROOT}/post_inst.sh
+cat << \EOF > ${TOP_DIR}/root/post_inst.sh
 #!/bin/bash
 
 mount -t proc none /proc/
@@ -105,41 +119,10 @@ echo "ubuntu:ubuntu" | chpasswd
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
 locale-gen ja_JP.UTF-8
-#grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ubuntu --recheck --boot-directory=/boot/
-#update-grub
-
-for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
-umount $d
-done
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ubuntu --recheck --boot-directory=/boot/
+update-grub
 
 EOF
 
-chmod +x ${SROOT}/post_inst.sh
-chroot ${SROOT} /bin/bash /post_inst.sh
-
-
-###############  Desktop setup
-rsync -avAHXx --numeric-ids  ${SROOT}/ ${DROOT}/
-
-cat << \EOF > ${DROOT}/post_inst.sh
-#!/bin/bash
-
-mount -t proc none /proc/
-mount -t sysfs none /sys/
-mount -t devtmpfs none /dev/
-mount -t devpts none /dev/pts/
-mount -t pstore none /sys/fs/pstore/
-
-aptitude update
-aptitude install -y ubuntu-desktop
-update-initramfs -c -k 5.4.0-26-generic
-
-for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
-umount $d
-done
-
-EOF
-
-chmod +x ${DROOT}/post_inst.sh
-chroot ${DROOT} /bin/bash /post_inst.sh
+chmod +x ${TOP_DIR}/root/post_inst.sh
 

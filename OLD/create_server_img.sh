@@ -15,16 +15,13 @@ esac;
 
 mkdir -p ${ROOT} 
 
-ntpdate 0.debian.pool.ntp.org
-hwclock -w
-
 ### === debootstrap ===
 
 time debootstrap \
 --include=${PKG},linux-image-generic,\
 network-manager,\
 openssh-server,openssh-client,grub-efi \
-focal ${ROOT} http://archive.ubuntu.com/ubuntu/ 
+focal ${ROOT} http://archive.ubuntu.com/ubuntu/
 
 ### === post debootstrap ===
 
@@ -73,8 +70,6 @@ echo "ubuntu:ubuntu" | chpasswd
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
 
-aptitude clean 
-
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
 umount $d
 done
@@ -83,7 +78,4 @@ EOF
 
 chmod +x ${ROOT}/post_inst.sh
 chroot ${ROOT} /bin/bash /post_inst.sh
-
-(cd ${ROOT} ; tar --numeric-owner --acls --xattrs -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
-
 

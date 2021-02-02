@@ -2,33 +2,23 @@
 
 TOP_DIR=${PWD}/Build
 
-case "$1" in 
-	server|desktop)
-		ROOT=${TOP_DIR}/ubuntu-$1
-		PKG=ubuntu-$1
-	;;
-	*)
-		echo Usage: $0 "[server|desktop]";
-		exit
-	;;
-esac;
+mkdir -p ${TOP_DIR}/server
+mkdir -p ${TOP_DIR}/desktop
 
-mkdir -p ${ROOT} 
-
-ntpdate 0.debian.pool.ntp.org
-hwclock -w
+SROOT=${TOP_DIR}/server
+DROOT=${TOP_DIR}/desktop
 
 ### === debootstrap ===
 
 time debootstrap \
---include=${PKG},linux-image-generic,\
+--include=ubuntu-server,linux-image-generic,\
 network-manager,\
 openssh-server,openssh-client,grub-efi \
-focal ${ROOT} http://archive.ubuntu.com/ubuntu/ 
+focal ${SROOT} http://archive.ubuntu.com/ubuntu/
 
 ### === post debootstrap ===
 
-cat << \EOF > ${ROOT}/etc/apt/sources.list
+cat << \EOF > ${SROOT}/etc/apt/sources.list
 #deb http://archive.ubuntu.com/ubuntu focal main
 deb http://archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
 deb-src http://archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
@@ -40,7 +30,7 @@ deb http://archive.canonical.com/ubuntu focal partner
 deb-src http://archive.canonical.com/ubuntu focal partner
 EOF
 
-cat << \EOF > ${ROOT}/etc/default/grub
+cat << \EOF > ${SROOT}/etc/default/grub
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=10
 GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
@@ -51,7 +41,7 @@ GRUB_GFXMODE=640x480
 EOF
 
 
-cat << \EOF > ${ROOT}/post_inst.sh
+cat << \EOF > ${SROOT}/post_inst.sh
 #!/bin/bash
 
 mount -t proc none /proc/
@@ -73,7 +63,31 @@ echo "ubuntu:ubuntu" | chpasswd
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
 
-aptitude clean 
+for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
+umount $d
+done
+
+EOF
+
+chmod +x ${SROOT}/post_inst.sh
+chroot ${SROOT} /bin/bash /post_inst.sh
+
+
+###############  Desktop setup
+rsync -avAHXx --numeric-ids  ${SROOT}/ ${DROOT}/
+
+cat << \EOF > ${DROOT}/post_inst.sh
+#!/bin/bash
+
+mount -t proc none /proc/
+mount -t sysfs none /sys/
+mount -t devtmpfs none /dev/
+mount -t devpts none /dev/pts/
+mount -t pstore none /sys/fs/pstore/
+
+aptitude update
+aptitude install -y ubuntu-desktop
+update-initramfs -c -k 5.4.0-26-generic
 
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
 umount $d
@@ -81,9 +95,6 @@ done
 
 EOF
 
-chmod +x ${ROOT}/post_inst.sh
-chroot ${ROOT} /bin/bash /post_inst.sh
-
-(cd ${ROOT} ; tar --numeric-owner --acls --xattrs -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
-
+chmod +x ${DROOT}/post_inst.sh
+chroot ${DROOT} /bin/bash /post_inst.sh
 
