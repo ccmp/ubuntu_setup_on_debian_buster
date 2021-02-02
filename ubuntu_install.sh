@@ -17,6 +17,8 @@ case "$1" in
 	;;
 esac;
 
+ntpdate 0.debian.pool.ntp.org
+hwclock -w
 
 sgdisk -Z $dev
 sgdisk -n 2::+512M  $dev
@@ -38,8 +40,10 @@ mount -L ESP ${MNT_DIR}/boot/efi
 
 ### === Exstract Rootfs ===
 
-gunzip -c ${TOP_DIR}/${PKG}.tgz | (cd ${MNT_DIR} ; tar --numeric-owner --acls --xattrs -xvpf - )
+echo -n "Extracting rootfs from ${TOP_DIR}/${PKG}.tgz ...."
+gunzip -c ${TOP_DIR}/${PKG}.tgz | (cd ${MNT_DIR} ; tar --numeric-owner --acls --xattrs -xpf - )
 
+echo " done"
 
 ### === Post Exstract Rootfs ===
 
@@ -49,11 +53,11 @@ set default=0
 set timeout=5
 
 menuentry "Ubuntu Linux" {
-linux /boot/vmlinuz root=/dev/${dev}p1 vga=0x305 panic=10 net.ifnames=0 biosdevname=0
+linux /boot/vmlinuz root=${dev}p1 vga=0x305 panic=10
 initrd /boot/initrd.img
 }
 menuentry "Ubuntu Linux Old" {
-linux /boot/vmlinuz.old root=/dev/${dev}p1 vga=0x305 panic=10 net.ifnames=0 biosdevname=0
+linux /boot/vmlinuz.old root=${dev}p1 vga=0x305 panic=10
 }
 EOF
 
@@ -79,6 +83,8 @@ ${dev}p1  /               ext4    errors=remount-ro 0       1
 LABEL=ESP	/boot/efi	vfat	defaults	0	0
 EOF
 
+cp /etc/adjtime ${MNT_DIR}/etc/
+
 cat << \EOF > ${MNT_DIR}/post_inst.sh
 #!/bin/bash
 
@@ -91,12 +97,9 @@ mount -t pstore none /sys/fs/pstore/
 apt-get update 
 aptitude install -f
 aptitude upgrade -y
-
-aptitude install language-pack-gnome-ja fonts-noto fonts-takao fonts-ipafont fonts-ipaexfont -y
 aptitude clean 
 
 update-initramfs -c -k 5.4.0-26-generic
-locale-gen ja_JP.UTF-8
 
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ubuntu --recheck --boot-directory=/boot/
 update-grub
@@ -109,5 +112,3 @@ EOF
 
 chmod +x ${MNT_DIR}/post_inst.sh
 chroot ${MNT_DIR} /bin/bash /post_inst.sh
-
-

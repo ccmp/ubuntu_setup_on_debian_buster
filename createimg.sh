@@ -65,9 +65,13 @@ apt --fix-broken install -y
 apt-get install -y aptitude tree initramfs-tools
 
 aptitude upgrade -y
-aptitude clean 
+aptitude install language-pack-gnome-ja fonts-noto fonts-takao fonts-ipafont fonts-ipaexfont -y
 
-update-initramfs -c -k 5.4.0-26-generic
+locale-gen ja_JP.UTF-8
+#update-locale LANG=ja_JP.UTF-8
+update-locale LANG=C.UTF-8
+
+aptitude clean 
 
 useradd -mU ubuntu -G sudo -s /bin/bash 
 echo "ubuntu:ubuntu" | chpasswd
@@ -85,5 +89,3 @@ chmod +x ${ROOT}/post_inst.sh
 chroot ${ROOT} /bin/bash /post_inst.sh
 
 (cd ${ROOT} ; tar --numeric-owner --acls --xattrs -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
-
-
