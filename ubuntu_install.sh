@@ -98,12 +98,6 @@ aptitude clean
 update-initramfs -c -k 5.4.0-26-generic
 locale-gen ja_JP.UTF-8
 
-useradd -mU ubuntu -G sudo -s /bin/bash 
-echo "ubuntu:ubuntu" | chpasswd
-
-echo "Asia/Tokyo" > /etc/timezone
-ln -sf /usr/share/zoneinfo/Japan /etc/localtime
-
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ubuntu --recheck --boot-directory=/boot/
 update-grub
 

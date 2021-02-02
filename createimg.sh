@@ -65,6 +65,8 @@ apt --fix-broken install -y
 apt-get install -y aptitude tree initramfs-tools
 
 aptitude upgrade -y
+aptitude clean 
+
 update-initramfs -c -k 5.4.0-26-generic
 
 useradd -mU ubuntu -G sudo -s /bin/bash 
@@ -72,8 +74,6 @@ echo "ubuntu:ubuntu" | chpasswd
 
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
-
-aptitude clean 
 
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
 umount $d
