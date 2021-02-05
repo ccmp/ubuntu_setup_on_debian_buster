@@ -38,6 +38,17 @@ mount -L ubuntu ${MNT_DIR}
 mkdir -p ${MNT_DIR}/boot/efi
 mount -L ESP ${MNT_DIR}/boot/efi
 
+### === Download Package ===
+if [ ! -f  ${TOP_DIR}/${PKG}.tgz ] ;then
+  wget -P ${TOP_DIR} http://192.168.60.10:8088/install/${PKG}.tgz
+  if [ $? -ne 0 ] ;then
+    echo "Error: Cannot download rootfs:${PKG}.tgz"
+    exit 1
+  fi
+else
+  echo "rootfs:${PKG}.tgz is found. skip download..."
+fi
+
 ### === Exstract Rootfs ===
 
 echo -n "Extracting rootfs from ${TOP_DIR}/${PKG}.tgz ...."
