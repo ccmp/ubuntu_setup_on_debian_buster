@@ -21,7 +21,9 @@ Pin: release a=unstable
 Pin-Priority: 89
 EOF
 
-aptitude install -t testing debootstrap
-aptitude install -t testing  ubuntu-keyring
+apt-get update
+
+aptitude install -y -t testing debootstrap
+aptitude install -y -t testing ubuntu-keyring
 
 
