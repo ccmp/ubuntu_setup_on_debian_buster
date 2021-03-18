@@ -21,7 +21,7 @@ Pin: release a=unstable
 Pin-Priority: 89
 EOF
 
-apt-get update
+apt-get update -y
 
 aptitude install -y -t testing debootstrap
 aptitude install -y -t testing ubuntu-keyring
