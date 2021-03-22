@@ -1,3 +1,5 @@
 Build*
 root/
 .bk
+tmp
+*.old

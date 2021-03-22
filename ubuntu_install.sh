@@ -17,6 +17,9 @@ case "$1" in
 	;;
 esac;
 
+apt-get update
+apt-get install -y gdisk wget dosfstools parted 
+
 ntpdate 0.debian.pool.ntp.org
 hwclock -w
 
@@ -26,7 +29,12 @@ sgdisk -t 2:ef00 $dev
 sgdisk -n 1:: $dev
 sgdisk -c 1:Linux -c 2:ESP $dev
 sgdisk -p $dev
+
+sleep 10
+
 partprobe
+
+sleep 10
 
 mkfs.fat -F32 -n efi ${dev}p2
 mkfs.ext4 -F -L ubuntu ${dev}p1
@@ -37,6 +45,17 @@ mkdir -p ${MNT_DIR}
 mount -L ubuntu ${MNT_DIR}
 mkdir -p ${MNT_DIR}/boot/efi
 mount -L ESP ${MNT_DIR}/boot/efi
+
+### === Download Package ===
+if [ ! -f  ${TOP_DIR}/${PKG}.tgz ] ;then
+  wget -P ${TOP_DIR} http://192.168.60.10:8088/install/${PKG}.tgz
+  if [ $? -ne 0 ] ;then
+    echo "Error: Cannot download rootfs:${PKG}.tgz"
+    exit 1
+  fi
+else
+  echo "rootfs:${PKG}.tgz is found. skip download..."
+fi
 
 ### === Exstract Rootfs ===
 
@@ -66,14 +85,8 @@ cat << EOF > ${MNT_DIR}/etc/netplan/01-netconfig.yaml
 
 network:
   ethernets:
-#    eth0:
     enp72s0:
-#    enx567335da7a75:
-      dhcp4: no
-      addresses: [192.168.60.19/22]
-      gateway4: 192.168.60.1
-      nameservers:
-        addresses: [192.168.60.1]
+      dhcp4: yes
       dhcp6: no
   version: 2
 EOF
@@ -94,7 +107,6 @@ mount -t devtmpfs none /dev/
 mount -t devpts none /dev/pts/
 mount -t pstore none /sys/fs/pstore/
 
-apt-get update 
 aptitude install -f
 aptitude upgrade -y
 aptitude clean 
