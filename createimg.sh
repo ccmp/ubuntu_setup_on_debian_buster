@@ -22,7 +22,6 @@ hwclock -w
 
 time debootstrap \
 --include=${PKG},linux-image-generic,\
-network-manager,\
 openssh-server,openssh-client,grub-efi \
 focal ${ROOT} http://archive.ubuntu.com/ubuntu/ 
 

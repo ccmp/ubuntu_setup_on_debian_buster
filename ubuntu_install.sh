@@ -107,11 +107,6 @@ mount -t devtmpfs none /dev/
 mount -t devpts none /dev/pts/
 mount -t pstore none /sys/fs/pstore/
 
-apt-get install -y wget gnupg gnupg2
-wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
-apt-get update 
-apt-get install -y google-chrome-stable
 aptitude install -f
 aptitude upgrade -y
 aptitude clean 
