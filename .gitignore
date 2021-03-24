@@ -3,3 +3,4 @@ root/
 .bk
 tmp
 *.old
+*~

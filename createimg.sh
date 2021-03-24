@@ -86,6 +86,9 @@ echo "ubuntu:ubuntu" | chpasswd
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
 
+dconf write /org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/use-system-font false
+
+
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
 umount $d
 done
