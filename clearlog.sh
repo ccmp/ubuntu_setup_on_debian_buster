@@ -6,7 +6,6 @@ NVMEBLKDEV=/dev/nvme0n1p1
 
 if [ -b ${NVMEBLKDEV} ] ;then 
     mount /dev/nvme0n1p1 ${ROOTMNT}
-    if 
 else
     echo "Nvme Block Device not found:${NVMEBLKDEV}"
     exit
