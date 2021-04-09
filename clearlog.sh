@@ -5,7 +5,7 @@ IPMISEL=/usr/sbin/ipmi-sel
 NVMEBLKDEV=/dev/nvme0n1p1
 
 if [ -b ${NVMEBLKDEV} ] ;then 
-    mount /dev/nvme0n1p1 ${ROOTMNT}
+    mount ${NVMEBLKDEV} ${ROOTMNT}
 else
     echo "Nvme Block Device not found:${NVMEBLKDEV}"
     exit
