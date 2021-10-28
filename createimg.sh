@@ -50,21 +50,6 @@ GRUB_TERMINAL=console
 GRUB_GFXMODE=640x480
 EOF
 
-if [ ${PKG}"x" = "ubuntu-desktopx" ] ;then 
-[ -d ${ROOT}/etc/dconf/profile ] || mkdir -p ${ROOT}/etc/dconf/profile
-cat << \EOF > ${ROOT}/etc/dconf/profile/user
-user-db:user
-system-db:local
-EOF
-
-[ -d ${ROOT}/etc/dconf/db/local.d ] || mkdir -p ${ROOT}/etc/dconf/db/local.d
-cat << \EOF > ${ROOT}/etc/dconf/db/local.d/01-gnome-terminal
-[org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
-
-use-system-font=false
-EOF
-fi
-
 cat << \EOF > ${ROOT}/post_inst.sh
 #!/bin/bash
 
@@ -101,6 +86,25 @@ done
 
 EOF
 
+chmod +x ${ROOT}/post_inst.sh
+chroot ${ROOT} /bin/bash /post_inst.sh
+
+# Post install for ubuntu-desktop 
+if [ ${PKG}"x" = "ubuntu-desktopx" ] ;then
+
+[ -d ${ROOT}/etc/dconf/profile ] || mkdir -p ${ROOT}/etc/dconf/profile
+cat << \EOF > ${ROOT}/etc/dconf/profile/user
+user-db:user
+system-db:local
+EOF
+
+[ -d ${ROOT}/etc/dconf/db/local.d ] || mkdir -p ${ROOT}/etc/dconf/db/local.d
+cat << \EOF > ${ROOT}/etc/dconf/db/local.d/01-gnome-terminal
+[org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
+
+use-system-font=false
+EOF
+
 cat << \EOF > ${ROOT}/post_inst_desktop.sh
 #!/bin/bash
 
@@ -126,9 +130,9 @@ done
 
 EOF
 
-chmod +x ${ROOT}/post_inst.sh
-chroot ${ROOT} /bin/bash /post_inst.sh
-if [ ${PKG}"x" = "ubuntu-desktopx" ] ;then
-    chroot ${ROOT} /bin/bash /post_inst_desktop.sh
+chmod +x ${ROOT}/post_inst_desktop.sh
+chroot ${ROOT} /bin/bash /post_inst_desktop.sh
+
 fi
+
 (cd ${ROOT} ; tar --numeric-owner --acls --xattrs -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
