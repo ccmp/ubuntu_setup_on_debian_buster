@@ -2,14 +2,29 @@
 
 TOP_DIR=${PWD}/Build
 
+SKIP_DEBOOTSTRAP=""
+
+while getopts Z: OPT
+do
+        case $OPT in
+            Z)
+# for Debug
+                    SKIP_DEBOOTSTRAP="yes"
+                        ;;
+        esac
+done
+shift $((OPTIND - 1))
+
+
 case "$1" in 
 	server|desktop)
 		ROOT=${TOP_DIR}/ubuntu-$1
 		PKG=ubuntu-$1
 	;;
 	*)
-		echo Usage: $0 "[server|desktop]";
-		exit
+	    echo Usage: $0 "[server|desktop]";
+	    echo "Warn(Todo):server option is not working."
+	    exit
 	;;
 esac;
 
@@ -18,6 +33,8 @@ mkdir -p ${ROOT}
 ntpdate 0.debian.pool.ntp.org
 hwclock -w
 
+if [ ${SKIP_DEBOOTSTRAP}"x" !=　"yesx" ] ;then
+   
 ### === debootstrap ===
 
 time debootstrap \
@@ -26,6 +43,8 @@ openssh-server,openssh-client,grub-efi \
 focal ${ROOT} http://archive.ubuntu.com/ubuntu/ 
 
 ### === post debootstrap ===
+
+fi
 
 cat << \EOF > ${ROOT}/etc/apt/sources.list
 #deb http://archive.ubuntu.com/ubuntu focal main
@@ -49,18 +68,20 @@ GRUB_TERMINAL=console
 GRUB_GFXMODE=640x480
 EOF
 
-[ -d /etc/dconf/profile ] || mkdir -p /etc/dconf/profile
+if [ ${PKG}"x" = "ubuntu-desktopx" ] ;then 
+[ -d ${ROOT}/etc/dconf/profile ] || mkdir -p ${ROOT}/etc/dconf/profile
 cat << \EOF > ${ROOT}/etc/dconf/profile/user
 user-db:user
 system-db:local
 EOF
 
-[ -d /etc/dconf/db/local.d ] || mkdir -p /etc/dconf/db/local.d
+[ -d ${ROOT}/etc/dconf/db/local.d ] || mkdir -p ${ROOT}/etc/dconf/db/local.d
 cat << \EOF > ${ROOT}/etc/dconf/db/local.d/01-gnome-terminal
 [org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
 
 use-system-font=false
 EOF
+fi
 
 cat << \EOF > ${ROOT}/post_inst.sh
 #!/bin/bash
@@ -97,7 +118,7 @@ echo "ubuntu:ubuntu" | chpasswd
 
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
- 
+
 /usr/bin/dconf update
 
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
