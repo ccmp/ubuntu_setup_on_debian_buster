@@ -2,20 +2,6 @@
 
 TOP_DIR=${PWD}/Build
 
-SKIP_DEBOOTSTRAP=""
-
-while getopts Z OPT
-do
-        case $OPT in
-            Z)
-# for Debug
-                SKIP_DEBOOTSTRAP="yes"
-                ;;
-        esac
-done
-shift $((OPTIND - 1))
-
-
 case "$1" in 
 	server|desktop)
 		ROOT=${TOP_DIR}/ubuntu-$1
@@ -23,7 +9,6 @@ case "$1" in
 	;;
 	*)
 	    echo Usage: $0 "[server|desktop]";
-	    echo "Warn(Todo):server option is not working."
 	    exit
 	;;
 esac;
@@ -32,8 +17,6 @@ mkdir -p ${ROOT}
 
 ntpdate 0.debian.pool.ntp.org
 hwclock -w
-
-if [ ${SKIP_DEBOOTSTRAP}"x" != "yesx" ] ;then
    
 ### === debootstrap ===
 
@@ -44,7 +27,6 @@ focal ${ROOT} http://archive.ubuntu.com/ubuntu/
 
 ### === post debootstrap ===
 
-fi
 
 cat << \EOF > ${ROOT}/etc/apt/sources.list
 #deb http://archive.ubuntu.com/ubuntu focal main
@@ -98,18 +80,12 @@ apt-get install -y aptitude tree initramfs-tools
 
 apt-get install -y wget gnupg gnupg2
 
-wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
-
-apt-get update -y
-apt-get install -y google-chrome-stable
-
 aptitude upgrade -y
 aptitude install language-pack-gnome-ja fonts-noto fonts-takao fonts-ipafont fonts-ipaexfont -y
 
 locale-gen ja_JP.UTF-8
-#update-locale LANG=ja_JP.UTF-8
-update-locale LANG=C.UTF-8
+update-locale LANG=ja_JP.UTF-8
+#update-locale LANG=C.UTF-8
 
 aptitude clean 
 
@@ -118,6 +94,29 @@ echo "ubuntu:ubuntu" | chpasswd
 
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
+
+for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
+umount $d
+done
+
+EOF
+
+cat << \EOF > ${ROOT}/post_inst_desktop.sh
+#!/bin/bash
+
+mount -t proc none /proc/
+mount -t sysfs none /sys/
+mount -t devtmpfs none /dev/
+mount -t devpts none /dev/pts/
+mount -t pstore none /sys/fs/pstore/
+
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+
+apt-get update -y
+apt-get install -y google-chrome-stable
+
+aptitude clean 
 
 /usr/bin/dconf update
 
@@ -129,5 +128,7 @@ EOF
 
 chmod +x ${ROOT}/post_inst.sh
 chroot ${ROOT} /bin/bash /post_inst.sh
-
+if [ ${PKG}"x" = "ubuntu-desktopx" ] ;then
+    chroot ${ROOT} /bin/bash /post_inst_desktop.sh
+fi
 (cd ${ROOT} ; tar --numeric-owner --acls --xattrs -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
