@@ -49,6 +49,18 @@ GRUB_TERMINAL=console
 GRUB_GFXMODE=640x480
 EOF
 
+[ -d /etc/dconf/profile ] || mkdir -p /etc/dconf/profile
+cat << \EOF > ${ROOT}/etc/dconf/profile/user
+user-db:user
+system-db:local
+EOF
+
+[ -d /etc/dconf/db/local.d ] || mkdir -p /etc/dconf/db/local.d
+cat << \EOF > ${ROOT}/etc/dconf/db/local.d/01-gnome-terminal
+[org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
+
+use-system-font=false
+EOF
 
 cat << \EOF > ${ROOT}/post_inst.sh
 #!/bin/bash
@@ -85,8 +97,8 @@ echo "ubuntu:ubuntu" | chpasswd
 
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
-
-dconf write /org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/use-system-font false
+ 
+/usr/bin/dconf update
 
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
 umount $d
