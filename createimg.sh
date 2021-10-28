@@ -33,7 +33,7 @@ mkdir -p ${ROOT}
 ntpdate 0.debian.pool.ntp.org
 hwclock -w
 
-if [ ${SKIP_DEBOOTSTRAP}"x" !=　"yesx" ] ;then
+if [ ${SKIP_DEBOOTSTRAP}"x" != "yesx" ] ;then
    
 ### === debootstrap ===
 
