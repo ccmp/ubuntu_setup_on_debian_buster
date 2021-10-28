@@ -4,13 +4,13 @@ TOP_DIR=${PWD}/Build
 
 SKIP_DEBOOTSTRAP=""
 
-while getopts Z: OPT
+while getopts Z OPT
 do
         case $OPT in
             Z)
 # for Debug
-                    SKIP_DEBOOTSTRAP="yes"
-                        ;;
+                SKIP_DEBOOTSTRAP="yes"
+                ;;
         esac
 done
 shift $((OPTIND - 1))
