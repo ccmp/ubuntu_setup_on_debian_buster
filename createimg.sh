@@ -8,8 +8,8 @@ case "$1" in
 		PKG=ubuntu-$1
 	;;
 	*)
-	    echo Usage: $0 "[server|desktop]";
-	    exit
+		echo Usage: $0 "[server|desktop]";
+		exit
 	;;
 esac;
 
@@ -17,7 +17,7 @@ mkdir -p ${ROOT}
 
 ntpdate 0.debian.pool.ntp.org
 hwclock -w
-   
+
 ### === debootstrap ===
 
 time debootstrap \
@@ -26,7 +26,6 @@ openssh-server,openssh-client,grub-efi \
 focal ${ROOT} http://archive.ubuntu.com/ubuntu/ 
 
 ### === post debootstrap ===
-
 
 cat << \EOF > ${ROOT}/etc/apt/sources.list
 #deb http://archive.ubuntu.com/ubuntu focal main
@@ -50,6 +49,7 @@ GRUB_TERMINAL=console
 GRUB_GFXMODE=640x480
 EOF
 
+
 cat << \EOF > ${ROOT}/post_inst.sh
 #!/bin/bash
 
@@ -69,8 +69,8 @@ aptitude upgrade -y
 aptitude install language-pack-gnome-ja fonts-noto fonts-takao fonts-ipafont fonts-ipaexfont -y
 
 locale-gen ja_JP.UTF-8
-update-locale LANG=ja_JP.UTF-8
-#update-locale LANG=C.UTF-8
+#update-locale LANG=ja_JP.UTF-8
+update-locale LANG=C.UTF-8
 
 aptitude clean 
 
@@ -114,7 +114,7 @@ mount -t devtmpfs none /dev/
 mount -t devpts none /dev/pts/
 mount -t pstore none /sys/fs/pstore/
 
-wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
 echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
 
 apt-get update -y
