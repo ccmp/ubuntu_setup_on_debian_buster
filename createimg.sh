@@ -65,12 +65,6 @@ apt-get install -y aptitude tree initramfs-tools
 
 apt-get install -y wget gnupg gnupg2
 
-wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
-
-apt-get update -y
-apt-get install -y google-chrome-stable
-
 aptitude upgrade -y
 aptitude install language-pack-gnome-ja fonts-noto fonts-takao fonts-ipafont fonts-ipaexfont -y
 
@@ -86,8 +80,6 @@ echo "ubuntu:ubuntu" | chpasswd
 echo "Asia/Tokyo" > /etc/timezone
 ln -sf /usr/share/zoneinfo/Japan /etc/localtime
 
-dconf write /org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/use-system-font false
-
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
 umount $d
 done
@@ -96,5 +88,51 @@ EOF
 
 chmod +x ${ROOT}/post_inst.sh
 chroot ${ROOT} /bin/bash /post_inst.sh
+
+# Post install for ubuntu-desktop 
+if [ ${PKG}"x" = "ubuntu-desktopx" ] ;then
+
+[ -d ${ROOT}/etc/dconf/profile ] || mkdir -p ${ROOT}/etc/dconf/profile
+cat << \EOF > ${ROOT}/etc/dconf/profile/user
+user-db:user
+system-db:local
+EOF
+
+[ -d ${ROOT}/etc/dconf/db/local.d ] || mkdir -p ${ROOT}/etc/dconf/db/local.d
+cat << \EOF > ${ROOT}/etc/dconf/db/local.d/01-gnome-terminal
+[org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
+
+use-system-font=false
+EOF
+
+cat << \EOF > ${ROOT}/post_inst_desktop.sh
+#!/bin/bash
+
+mount -t proc none /proc/
+mount -t sysfs none /sys/
+mount -t devtmpfs none /dev/
+mount -t devpts none /dev/pts/
+mount -t pstore none /sys/fs/pstore/
+
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+
+apt-get update -y
+apt-get install -y google-chrome-stable
+
+aptitude clean 
+
+/usr/bin/dconf update
+
+for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
+umount $d
+done
+
+EOF
+
+chmod +x ${ROOT}/post_inst_desktop.sh
+chroot ${ROOT} /bin/bash /post_inst_desktop.sh
+
+fi
 
 (cd ${ROOT} ; tar --numeric-owner --acls --xattrs -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
