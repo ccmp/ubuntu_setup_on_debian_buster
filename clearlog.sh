@@ -2,12 +2,32 @@
 
 ROOTMNT=/mnt
 IPMISEL=/usr/sbin/ipmi-sel
-NVMEBLKDEV=/dev/nvme0n1p1
+#BLKDEV=/dev/nvme0n1p1
 
-if [ -b ${NVMEBLKDEV} ] ;then 
-    mount ${NVMEBLKDEV} ${ROOTMNT}
+case "$1" in 
+	sata)
+	        dev=/dev/sda
+	        part_root=/dev/sda1
+	        part_efi=/dev/sda2	    
+	;;
+	nvme|"")
+	        dev=/dev/nvme0n1
+	        part_root=/dev/nvme0n1p1
+	        part_efi=/dev/nvme0n1p2
+	;;
+	*)
+	        echo Usage: $0 "[sata|(nvme)]";
+	        exit
+	;;
+	
+esac;
+
+BLKDEV=${part_root}
+
+if [ -b ${BLKDEV} ] ;then 
+    mount ${BLKDEV} ${ROOTMNT}
 else
-    echo "Nvme Block Device not found:${NVMEBLKDEV}"
+    echo "Block Device not found:${BLKDEV}"
     exit
 fi
 

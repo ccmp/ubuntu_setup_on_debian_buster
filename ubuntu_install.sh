@@ -1,7 +1,9 @@
 #!/bin/bash 
 
 TGZ=$1
-dev=/dev/nvme0n1
+DRV=$2
+
+#dev=/dev/nvme0n1
 
 TOP_DIR=${PWD}/Build
 MNT_DIR=${PWD}/root
@@ -12,9 +14,27 @@ case "$1" in
 		PKG=ubuntu-$1
 	;;
 	*)
-		echo Usage: $0 "[server|desktop]";
+		echo Usage: $0 "[server|desktop] [sata|(nvme)]";
 		exit
 	;;
+esac;
+
+case "$2" in 
+	sata)
+	        dev=/dev/sda
+	        part_root=/dev/sda1
+	        part_efi=/dev/sda2	    
+	;;
+	nvme|"")
+	        dev=/dev/nvme0n1
+	        part_root=/dev/nvme0n1p1
+	        part_efi=/dev/nvme0n1p2
+	;;
+	*)
+	        echo Usage: $0 "[server|desktop] [sata|(nvme)]";
+	        exit
+	;;
+	
 esac;
 
 apt-get update
@@ -36,10 +56,10 @@ partprobe
 
 sleep 10
 
-mkfs.fat -F32 -n efi ${dev}p2
-mkfs.ext4 -F -L ubuntu ${dev}p1
+mkfs.fat -F32 -n efi ${part_efi}
+mkfs.ext4 -F -L ubuntu ${part_root}
 
-fatlabel ${dev}p2 ESP
+fatlabel ${part_efi} ESP
 
 mkdir -p ${MNT_DIR}
 mount -L ubuntu ${MNT_DIR}
@@ -72,11 +92,11 @@ set default=0
 set timeout=5
 
 menuentry "Ubuntu Linux" {
-linux /boot/vmlinuz root=${dev}p1 vga=0x305 panic=10
+linux /boot/vmlinuz root=${part_root} vga=0x305 panic=10
 initrd /boot/initrd.img
 }
 menuentry "Ubuntu Linux Old" {
-linux /boot/vmlinuz.old root=${dev}p1 vga=0x305 panic=10
+linux /boot/vmlinuz.old root=${part_root} vga=0x305 panic=10
 }
 EOF
 
@@ -92,7 +112,7 @@ network:
 EOF
 
 cat << EOF > ${MNT_DIR}/etc/fstab 
-${dev}p1  /               ext4    errors=remount-ro 0       1
+${part_root}  /               ext4    errors=remount-ro 0       1
 LABEL=ESP	/boot/efi	vfat	defaults	0	0
 EOF
 
