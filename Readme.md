@@ -52,3 +52,7 @@ Found initrd image: /boot/initrd.img-5.4.0-26-generic
 done
 root@100:~/ubuntu_setup_on_debian_buster#
 ```
+
+
+## Ubuntu Install作業ログ
+ * [2022/02/04 理化学研究所](https://trac.ccmp.jp/clustcom/wiki/riken20220204)
