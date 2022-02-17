@@ -1,10 +1,5 @@
 #!/bin/bash 
 
-TGZ=$1
-DRV=$2
-
-#dev=/dev/nvme0n1
-
 TOP_DIR=${PWD}/Build
 MNT_DIR=${PWD}/root
 
