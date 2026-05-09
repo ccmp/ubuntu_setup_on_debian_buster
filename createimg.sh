@@ -13,6 +13,7 @@ case "$1" in
 	;;
 esac;
 
+rm -rf ${ROOT}
 mkdir -p ${ROOT}
 
 ntpdate 0.debian.pool.ntp.org
