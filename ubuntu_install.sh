@@ -35,7 +35,7 @@ case "$2" in
 esac;
 
 apt-get update
-apt-get install -y gdisk wget dosfstools parted
+apt-get install -y gdisk wget dosfstools parted ntpdate
 
 ntpdate 0.debian.pool.ntp.org
 hwclock -w
@@ -134,7 +134,7 @@ mount -t devpts none /dev/pts/
 mount -t pstore none /sys/fs/pstore/
 
 apt-get install -f -y
-apt-get upgrade -y
+apt-get dist-upgrade -y
 apt-get clean
 
 update-initramfs -u -k all
@@ -143,7 +143,7 @@ grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ubunt
 update-grub
 
 for d in /sys/fs/pstore /dev/pts /dev /sys /proc ; do
-umount $d
+umount -l $d
 done
 
 EOF
