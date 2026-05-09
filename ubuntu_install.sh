@@ -77,7 +77,7 @@ fi
 ### === Extract Rootfs ===
 
 echo -n "Extracting rootfs from ${TOP_DIR}/${PKG}.tgz ...."
-gunzip -c ${TOP_DIR}/${PKG}.tgz | (cd ${MNT_DIR} ; tar --numeric-owner --acls --xattrs -xpf - )
+gunzip -c ${TOP_DIR}/${PKG}.tgz | (cd ${MNT_DIR} ; tar --numeric-owner --acls --xattrs --xattrs-include='security.*' -xpf - )
 
 echo " done"
 
