@@ -1,4 +1,4 @@
 #!/bin/bash
 
 apt-get update -y
-apt-get install -y debootstrap ubuntu-keyring
+apt-get install -y debootstrap ubuntu-keyring ntpdate

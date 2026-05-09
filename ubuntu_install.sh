@@ -35,9 +35,9 @@ case "$2" in
 esac;
 
 apt-get update
-apt-get install -y gdisk wget dosfstools parted chrony
+apt-get install -y gdisk wget dosfstools parted
 
-chronyd -q 'server 0.debian.pool.ntp.org iburst'
+ntpdate 0.debian.pool.ntp.org
 hwclock -w
 
 sgdisk -Z $dev

@@ -15,7 +15,7 @@ esac;
 
 mkdir -p ${ROOT}
 
-chronyd -q 'server 0.debian.pool.ntp.org iburst'
+ntpdate 0.debian.pool.ntp.org
 hwclock -w
 
 ### === debootstrap ===
