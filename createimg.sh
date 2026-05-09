@@ -1,8 +1,8 @@
-#!/bin/bash 
+#!/bin/bash
 
 TOP_DIR=${PWD}/Build
 
-case "$1" in 
+case "$1" in
 	server|desktop)
 		ROOT=${TOP_DIR}/ubuntu-$1
 		PKG=ubuntu-$1
@@ -13,9 +13,9 @@ case "$1" in
 	;;
 esac;
 
-mkdir -p ${ROOT} 
+mkdir -p ${ROOT}
 
-ntpdate 0.debian.pool.ntp.org
+chronyd -q 'server 0.debian.pool.ntp.org iburst'
 hwclock -w
 
 ### === debootstrap ===
@@ -23,27 +23,25 @@ hwclock -w
 time debootstrap \
 --include=${PKG},linux-image-generic,\
 openssh-server,openssh-client,grub-efi \
-focal ${ROOT} http://archive.ubuntu.com/ubuntu/ 
+noble ${ROOT} http://archive.ubuntu.com/ubuntu/
 
 ### === post debootstrap ===
 
 cat << \EOF > ${ROOT}/etc/apt/sources.list
-#deb http://archive.ubuntu.com/ubuntu focal main
-deb http://archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
-deb-src http://archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse
 
-deb http://archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
 
-deb http://archive.canonical.com/ubuntu focal partner
-deb-src http://archive.canonical.com/ubuntu focal partner
+deb http://archive.canonical.com/ubuntu noble partner
+deb-src http://archive.canonical.com/ubuntu noble partner
 EOF
 
 cat << \EOF > ${ROOT}/etc/default/grub
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=10
 GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
-#GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"
 GRUB_CMDLINE_LINUX=""
 GRUB_TERMINAL=console
 GRUB_GFXMODE=640x480
@@ -60,21 +58,18 @@ mount -t devpts none /dev/pts/
 mount -t pstore none /sys/fs/pstore/
 
 apt-get update -y
-apt --fix-broken install -y
+apt-get --fix-broken install -y
 apt-get install -y aptitude tree initramfs-tools
 
-apt-get install -y wget gnupg gnupg2
-
-aptitude upgrade -y
-aptitude install language-pack-gnome-ja fonts-noto fonts-takao fonts-ipafont fonts-ipaexfont -y
+apt-get upgrade -y
+apt-get install -y language-pack-ja fonts-noto-cjk fonts-ipafont fonts-ipaexfont -y
 
 locale-gen ja_JP.UTF-8
-#update-locale LANG=ja_JP.UTF-8
 update-locale LANG=C.UTF-8
 
-aptitude clean 
+apt-get clean
 
-useradd -mU ubuntu -G sudo -s /bin/bash 
+useradd -mU ubuntu -G sudo -s /bin/bash
 echo "ubuntu:ubuntu" | chpasswd
 
 echo "Asia/Tokyo" > /etc/timezone
@@ -89,7 +84,7 @@ EOF
 chmod +x ${ROOT}/post_inst.sh
 chroot ${ROOT} /bin/bash /post_inst.sh
 
-# Post install for ubuntu-desktop 
+# Post install for ubuntu-desktop
 if [ ${PKG}"x" = "ubuntu-desktopx" ] ;then
 
 [ -d ${ROOT}/etc/dconf/profile ] || mkdir -p ${ROOT}/etc/dconf/profile
@@ -114,13 +109,14 @@ mount -t devtmpfs none /dev/
 mount -t devpts none /dev/pts/
 mount -t pstore none /sys/fs/pstore/
 
-wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+mkdir -p /etc/apt/keyrings
+wget -q -O /etc/apt/keyrings/google-chrome.asc https://dl-ssl.google.com/linux/linux_signing_key.pub
+echo "deb [signed-by=/etc/apt/keyrings/google-chrome.asc] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
 
 apt-get update -y
 apt-get install -y google-chrome-stable
 
-aptitude clean 
+apt-get clean
 
 /usr/bin/dconf update
 

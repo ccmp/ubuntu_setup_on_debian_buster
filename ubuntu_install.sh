@@ -1,9 +1,11 @@
-#!/bin/bash 
+#!/bin/bash
+
+source "$(dirname "$0")/config.sh"
 
 TOP_DIR=${PWD}/Build
 MNT_DIR=${PWD}/root
 
-case "$1" in 
+case "$1" in
 	server|desktop)
 		ROOT=${TOP_DIR}/ubuntu-$1
 		PKG=ubuntu-$1
@@ -14,28 +16,28 @@ case "$1" in
 	;;
 esac;
 
-case "$2" in 
+case "$2" in
 	sata)
-	        dev=/dev/sda
-	        part_root=/dev/sda1
-	        part_efi=/dev/sda2	    
+		dev=/dev/sda
+		part_root=/dev/sda1
+		part_efi=/dev/sda2
 	;;
 	nvme|"")
-	        dev=/dev/nvme0n1
-	        part_root=/dev/nvme0n1p1
-	        part_efi=/dev/nvme0n1p2
+		dev=/dev/nvme0n1
+		part_root=/dev/nvme0n1p1
+		part_efi=/dev/nvme0n1p2
 	;;
 	*)
-	        echo Usage: $0 "[server|desktop] [sata|(nvme)]";
-	        exit
+		echo Usage: $0 "[server|desktop] [sata|(nvme)]";
+		exit
 	;;
-	
+
 esac;
 
 apt-get update
-apt-get install -y gdisk wget dosfstools parted 
+apt-get install -y gdisk wget dosfstools parted chrony
 
-ntpdate 0.debian.pool.ntp.org
+chronyd -q 'server 0.debian.pool.ntp.org iburst'
 hwclock -w
 
 sgdisk -Z $dev
@@ -62,7 +64,7 @@ mkdir -p ${MNT_DIR}/boot/efi
 mount -L ESP ${MNT_DIR}/boot/efi
 
 ### === Download Package ===
-if [ ! -f  ${TOP_DIR}/${PKG}.tgz ] ;then
+if [ ! -f ${TOP_DIR}/${PKG}.tgz ] ;then
   wget -P ${TOP_DIR} http://192.168.60.10:8088/install/${PKG}.tgz
   if [ $? -ne 0 ] ;then
     echo "Error: Cannot download rootfs:${PKG}.tgz"
@@ -72,14 +74,14 @@ else
   echo "rootfs:${PKG}.tgz is found. skip download..."
 fi
 
-### === Exstract Rootfs ===
+### === Extract Rootfs ===
 
 echo -n "Extracting rootfs from ${TOP_DIR}/${PKG}.tgz ...."
 gunzip -c ${TOP_DIR}/${PKG}.tgz | (cd ${MNT_DIR} ; tar --numeric-owner --acls --xattrs -xpf - )
 
 echo " done"
 
-### === Post Exstract Rootfs ===
+### === Post Extract Rootfs ===
 
 cat << EOF > ${MNT_DIR}/boot/grub/grub.cfg_always
 
@@ -95,21 +97,30 @@ linux /boot/vmlinuz.old root=${part_root} vga=0x305 panic=10
 }
 EOF
 
-
-cat << EOF > ${MNT_DIR}/etc/netplan/01-netconfig.yaml 
+cat << EOF > ${MNT_DIR}/etc/netplan/01-netconfig.yaml
 
 network:
   ethernets:
-    enp72s0:
+    ${NIC}:
       dhcp4: yes
       dhcp6: no
   version: 2
 EOF
 
-cat << EOF > ${MNT_DIR}/etc/fstab 
+cat << EOF > ${MNT_DIR}/etc/fstab
 ${part_root}  /               ext4    errors=remount-ro 0       1
 LABEL=ESP	/boot/efi	vfat	defaults	0	0
 EOF
+
+echo "${HOSTNAME}" > ${MNT_DIR}/etc/hostname
+
+if [ -n "${SSH_PUBKEY}" ] ;then
+  mkdir -p ${MNT_DIR}/home/ubuntu/.ssh
+  echo "${SSH_PUBKEY}" > ${MNT_DIR}/home/ubuntu/.ssh/authorized_keys
+  chmod 700 ${MNT_DIR}/home/ubuntu/.ssh
+  chmod 600 ${MNT_DIR}/home/ubuntu/.ssh/authorized_keys
+  chown -R 1000:1000 ${MNT_DIR}/home/ubuntu/.ssh
+fi
 
 cp /etc/adjtime ${MNT_DIR}/etc/
 
@@ -122,11 +133,11 @@ mount -t devtmpfs none /dev/
 mount -t devpts none /dev/pts/
 mount -t pstore none /sys/fs/pstore/
 
-aptitude install -f
-aptitude upgrade -y
-aptitude clean 
+apt-get install -f -y
+apt-get upgrade -y
+apt-get clean
 
-update-initramfs -c -k 5.4.0-26-generic
+update-initramfs -u -k all
 
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ubuntu --recheck --boot-directory=/boot/
 update-grub
