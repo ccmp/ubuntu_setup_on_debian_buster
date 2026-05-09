@@ -128,4 +128,4 @@ chroot ${ROOT} /bin/bash /post_inst_desktop.sh
 
 fi
 
-(cd ${ROOT} ; tar --numeric-owner --acls --xattrs --xattrs-include='security.*' -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
+(cd ${ROOT} ; tar --numeric-owner --acls --xattrs --xattrs-include='*' -cpf - .) | gzip > ${TOP_DIR}/${PKG}.tgz
