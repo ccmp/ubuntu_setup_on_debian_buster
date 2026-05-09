@@ -33,9 +33,6 @@ deb-src http://archive.ubuntu.com/ubuntu/ noble main restricted universe multive
 
 deb http://archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse
 deb http://archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
-
-deb http://archive.canonical.com/ubuntu noble partner
-deb-src http://archive.canonical.com/ubuntu noble partner
 EOF
 
 cat << \EOF > ${ROOT}/etc/default/grub
@@ -59,7 +56,7 @@ mount -t pstore none /sys/fs/pstore/
 
 apt-get update -y
 apt-get --fix-broken install -y
-apt-get install -y aptitude tree initramfs-tools
+apt-get install -y aptitude tree initramfs-tools wget
 
 apt-get upgrade -y
 apt-get install -y language-pack-ja fonts-noto-cjk fonts-ipafont fonts-ipaexfont -y
