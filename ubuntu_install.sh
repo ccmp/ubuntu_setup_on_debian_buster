@@ -106,6 +106,7 @@ network:
       dhcp6: no
   version: 2
 EOF
+chmod 600 ${MNT_DIR}/etc/netplan/01-netconfig.yaml
 
 cat << EOF > ${MNT_DIR}/etc/fstab
 ${part_root}  /               ext4    errors=remount-ro 0       1
